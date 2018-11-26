@@ -1,0 +1,2931 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="viewport" content="width=device-width">
+<script src="jquery-1.11.1.min.js"></script>
+<title>IROS16</title>
+<link href="style.css" rel="stylesheet" type="text/css" media="screen" />
+<style type=text/css>
+#container {
+	position: absolute;
+	width: 85%;
+	height: 90%;
+	margin-top: 2px;
+	overflow: hidden;
+}
+</style>
+
+<script language="JavaScript">
+function modify(number){
+   var condition = 'document.myprogram.modify' + number + '.checked';
+   if (eval(condition)){
+      action = 'Add=';}
+   else{
+      action = 'Delete=';
+   }
+   url = 'https://ras.papercept.net/conferences/scripts/myprogram.pl?ConfID=119&' + action + number;
+   window.open(url,'myprogrampage');
+}
+var iIntervalId;  // Global variable
+function addsession(id){
+   clearInterval(iIntervalId);
+   url = 'https://ras.papercept.net/conferences/scripts/myprogram.pl?ConfID=119&AddSession=' + id;
+   window.open(url,'myprogrampage');
+   startreset();
+}
+function getCookie(sName){
+   var sRE = "(?:; )?" + sName + "=([^;]*);?";   
+   var oRE = new RegExp(sRE);
+   if (oRE.test(document.cookie)){
+      return decodeURIComponent(RegExp["$1"]);}
+   else{
+      return null;
+   }
+}
+function loadprogram(){
+   var list = getCookie("2016ACC");
+   if (list){
+      var List = list.split(",");
+      for (var i=0; List[i]; i++){
+         var id = 'modify' + List[i];
+         var statement = 'document.myprogram.' + id + '.checked=true';  
+         var ID = document.getElementById(id);
+         if (ID){eval(statement);}
+      }
+   }
+}
+function reset(){
+
+   // Uncheck all modify and addsession checkboxes
+
+   for (var i=0; document.myprogram.elements[i]    ; i++){
+      var name = document.myprogram.elements[i].name;
+      if (name.substring(0,10) == 'addsession' || name.substring(0,6) == 'modify'){
+         document.myprogram.elements[i].checked = false;
+      }
+   }
+   
+   // Reload the program
+   
+   loadprogram();
+}
+function startreset(){
+   iIntervalId = setInterval(reset,2000);
+}
+function viewAbstract(number){
+   var box = document.getElementById('Ab' + number);
+   if (box.style.display == 'block'){
+      box.style.display = 'none';
+   }
+   else if (box && box.style.display == 'none'){
+      box.style.display = 'block';
+   }
+}
+function openAllAbstracts(){
+   var d = document.getElementsByTagName('div');
+   var count = d.length;
+   if (count == 0){return;}
+   for (var i=0; i<d.length; i++){
+      if (d[i].id && d[i].id.substring(0,2) == 'Ab' && d[i].style.display == 'none'){
+         d[i].style.display = 'block';
+      }
+   }
+}
+function closeAllAbstracts(){
+   var d = document.getElementsByTagName('div');
+   for (var i=0; i<d.length; i++){
+      if (d[i].id && d[i].id.substring(0,2) == 'Ab'){
+         d[i].style.display = 'none';
+      }
+   }
+}
+
+
+var uhash;
+var pColor;
+$(function() { 
+
+   // Check for URL hash
+
+   uhash = location.hash.substring(1);
+   if (uhash.slice(-1) == '_'){
+      uhash = null;
+   }
+   if (uhash){
+   
+      // Mark the session
+   
+      pColor = $('#' + uhash).parent().css('backgroundColor');
+      $('#' + uhash).parent().css('backgroundColor','#FF8888');
+
+      // Set the widths
+      
+      setwidth();
+      
+      // If claasical view is required then return
+
+      if (!ghit){return;} 
+      
+      // Reset left margin for FF
+
+      document.getElementById('container').scrollLeft = 0;;
+
+      // Discover the table and the block and determine the block Id
+   
+      var rt = $('#' + uhash);
+      var done = false;
+      while (!done){
+         rt = rt.parent();    
+         var etype = rt.get(0).tagName;  
+         if (rt.is("table")){      
+            done = true;
+         }
+      }
+      rt = rt.parent().parent().parent();
+      var iid = rt.attr('id')
+
+      // Show the block
+
+      initialize();
+      $('#' + iid).show();
+      $( '#A' + iid ).focus();
+      var ypos = $('#' + iid).offset().top;      
+      window.scrollTo(0,ypos);
+
+      // Cancel the scroll to uhash
+
+      var url = location.href;
+      url += '_';
+      location.href = url;
+      
+      // Scroll into view
+
+      var leftPosition = $('#' + uhash).parent().position().left;
+      var topOffset = $('#' + uhash).parent().offset().top;
+      var divOffset = $('#' + iid).find('div').offset().top;
+      var topPosition = topOffset-divOffset;
+      $('#' + iid).find('div').scrollLeft(leftPosition);
+      $('#' + iid).find('div').scrollTop(topPosition);
+   }
+   else{
+      setwidth();
+      initialize();
+   }
+});
+
+var ghit = false;
+function setwidth(){
+   var viewportwidth = $( window ).width();
+   var viewportheight = $( window ).height();
+   var sdiv = $( ".sdiv" );
+   for (var i=0; i<sdiv.length; i++){
+      $(sdiv[i]).css({width: .98*viewportwidth + 'px'});
+      $(sdiv[i]).css("height", .9*viewportheight-50 + 'px');      
+   }
+
+   // Detect horizontal overflow on any of the divs
+   
+   var divs = document.getElementsByTagName('div');
+   for (var i=0; i<divs.length; i++){
+      if (divs[i].id && divs[i].id.substring(0,3) == 'div'){
+         if (divs[i].scrollWidth > divs[i].clientWidth || divs[i].scrollHeight > divs[i].clientHeight){
+            ghit = true;
+            break;
+         }
+      }
+   }
+   if (!ghit){
+      for (var i=0; i<divs.length; i++){
+         divs[i].style.height = 'auto';
+      }
+   }
+}
+
+function selfollowing(hsh){
+   $('#' + uhash).parent().css('backgroundColor',pColor);
+   setwidth();
+   initialize();
+   if (hsh == 'TheTop'){
+      var ypos = $('#container').offset().top;
+      window.scrollTo(0,ypos)
+   }
+   else{
+      $('#' + hsh).show();
+//      window.location.hash = hsh;
+      $( '#A' + hsh ).focus();
+      var ypos = $('#' + hsh).offset().top;
+      window.scrollTo(0,ypos)
+   }
+}
+
+function initialize(){
+
+   // Show all day blocks
+   
+   var blcks = $('.blck');
+   for (var i=0; i<blcks.length; i++){
+      blcks[i].style.display = 'block';
+   }
+
+   // Detect horizontal overflow on any of the divs
+   
+   var hit = false;
+   var divs = document.getElementsByTagName('div');
+   for (var i=0; i<divs.length; i++){
+      if (divs[i].id && divs[i].id.substring(0,3) == 'div'){
+         if (divs[i].scrollWidth > divs[i].clientWidth || divs[i].scrollHeight > divs[i].clientHeight){
+            hit = true;
+            break;
+         }
+      }
+   }
+   if (hit){
+   
+      // Set overflow hidden on body. This will prevent it scrolling
+      
+      $("body").css("overflow", "auto");
+      document.getElementById('start').style.display = 'inline';
+      
+      // Hide all day blocks
+   
+      var blcks = $('.blck');
+      for (var i=0; i<blcks.length; i++){
+         blcks[i].style.display = 'none';
+      }
+   }
+   else{
+      $("body").css("overflow", "auto");
+      document.getElementById('start').style.display = 'none';
+      var blcks = $('.sdiv');
+      for (var i=0; i<blcks.length; i++){
+        blcks[i].style.height = 'auto';
+      }
+   }
+   return;
+}
+
+
+</script>
+</head>
+
+<body  onresize="setwidth(); initialize()">
+
+
+<!-- <div id="container"> -->
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+
+<div class="c" id="TheTop">
+</div>
+<br>
+<table border="0" cellspacing="0" cellpadding="0" width="85%" nowrap style="margin: auto">
+<tr><td>
+<h2>Program at a Glance</h2>
+</td></tr>
+</table>
+
+<table border="0" cellspacing="0" cellpadding="0" width="85%" nowrap style="margin: auto">
+<tr><td>
+
+<div class="c">
+
+         <div id="Monday" class="blck">
+         <p style="padding-left:100px;"><br><b>IROS 2016 Technical Program Monday October 10, 2016</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#Monday">Monday</a>&nbsp;&nbsp;<a href="#Tuesday">Tuesday</a>&nbsp;&nbsp;<a href="#Wednesday">Wednesday</a>&nbsp;&nbsp;<a href="#Thursday">Thursday</a>&nbsp;&nbsp;<a href="#Friday">Friday</a>&nbsp;&nbsp;<a href="#Tuesday" title="Click to jump to the next day">Next</a>&nbsp;&nbsp;<a href="#TheTop">Top</a>&nbsp;&nbsp;<br><span class="scrlis" style="color: gray">Click on the day's program and use the arrow keys for easy horizontal and vertical scrolling</span></p>
+      
+
+         <div id="div1" class="sdiv" style="overflow: auto">
+         <div id="AMonday" tabindex="1">
+	  
+         <table class="dayB" style="width: 800px">
+
+<tr class="tHdr">
+<td width="6%" class="c">Track T1</td>
+<td width="6%" class="c">Track T2</td>
+<td width="6%" class="c">Track T3</td>
+<td width="6%" class="c">Track T4</td>
+<td width="6%" class="c">Track T5</td>
+<td width="6%" class="c">Track T6</td>
+<td width="6%" class="c">Track T7</td>
+<td width="6%" class="c">Track T8</td>
+<td width="6%" class="c">Track T9</td>
+<td width="6%" class="c">Track T10</td>
+<td width="6%" class="c">Track T11</td>
+<td width="6%" class="c">Track T12</td>
+<td width="6%" class="c">Track T13</td>
+<td width="6%" class="c">Track T14</td>
+<td width="6%" class="c">Track T15</td>
+</tr><tr>
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft1">08:30-18:00</a><BR>
+                        Grand Ballroom<BR>
+                        Workshop MoFT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft1" title="Click to go to the session program"><i>Challenges in Robot Competitions</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft2">08:30-18:00</a><BR>
+                        #111<BR>
+                        Workshop MoFT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft2" title="Click to go to the session program"><i>Human-Robot Collaboration: Towards Co-Adaptive Learning through Semi-Autonomy and Shared Control</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft3">08:30-18:00</a><BR>
+                        #112<BR>
+                        Workshop MoFT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft3" title="Click to go to the session program"><i>Microrobots for Next Generation Biomedical Applications</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft4">08:30-18:00</a><BR>
+                        #101<BR>
+                        Workshop MoFT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft4" title="Click to go to the session program"><i>Shared Autonomy</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft5">08:30-18:00</a><BR>
+                        #102<BR>
+                        Workshop MoFT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft5" title="Click to go to the session program"><i>Safety-Related Sensing for Collaborative Applications</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft6">08:30-18:00</a><BR>
+                        #103<BR>
+                        Workshop MoFT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft6" title="Click to go to the session program"><i>Integrating Multiple Knowledge Representation and Reasoning Techniques in Robotics (MIRROR-16)</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft7">08:30-18:00</a><BR>
+                        #104<BR>
+                        Workshop MoFT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft7" title="Click to go to the session program"><i>Evaluation and Benchmarking of Underactuated and Soft Robotic Hands</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft8">08:30-18:00</a><BR>
+                        #105<BR>
+                        Workshop MoFT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft8" title="Click to go to the session program"><i>Artistically Skilled Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft9">08:30-18:00</a><BR>
+                        #106<BR>
+                        Workshop MoFT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft9" title="Click to go to the session program"><i>Virtual Neurorobotics in the Human Brain Project</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft10">08:30-18:00</a><BR>
+                        #107<BR>
+                        Workshop MoFT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft10" title="Click to go to the session program"><i>Dexterity Acquisition in Object Manipulation</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moft11">08:30-18:00</a><BR>
+                        #108<BR>
+                        Workshop MoFT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moft11" title="Click to go to the session program"><i>Perspectives on Analysis and Design of Human-Centered Robotics</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh1t12">08:30-12:30</a><BR>
+                        #204~205<BR>
+                        Workshop MoH1T12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh1t12" title="Click to go to the session program"><i>RoboCup Tutorial: Multi-Robot Autonomy in Robot Soccer As an Adversarial Domain</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh1t13">08:30-12:30</a><BR>
+                        #206~208<BR>
+                        Workshop MoH1T13<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh1t13" title="Click to go to the session program"><i>Robot Modularity</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh1t14">08:30-12:30</a><BR>
+                        #301<BR>
+                        Workshop MoH1T14<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh1t14" title="Click to go to the session program"><i>Robotics for the Elderlies: Involving Science, End Users, and Public Bodies</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh1t15">08:30-12:30</a><BR>
+                        #203<BR>
+                        Workshop MoH1T15<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh1t15" title="Click to go to the session program"><i>Teaching Robotics through Cloud Simulations</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh2t12">14:00-18:00</a><BR>
+                        #204~205<BR>
+                        Workshop MoH2T12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh2t12" title="Click to go to the session program"><i>See, Touch and Hear: 2nd Workshop on Multimodal Sensor-Based Robot Control for HRI and Soft Manipulation</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh2t13">14:00-18:00</a><BR>
+                        #206~208<BR>
+                        Workshop MoH2T13<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh2t13" title="Click to go to the session program"><i>Workshop on Bio-Inspired Social Robot Learning in Home Scenarios</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="moh2t14">14:00-18:00</a><BR>
+                        #301<BR>
+                        Workshop MoH2T14<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_1.html#moh2t14" title="Click to go to the session program"><i>Twisted String Actuation: State of the Art, Challenges and New Applications</i></a>
+                   </td>
+               
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+
+         </table>
+         </div>
+         </div>
+         </div>
+         <br><br>
+      
+         <div id="Tuesday" class="blck">
+         <p style="padding-left:100px;"><br><b>IROS 2016 Technical Program Tuesday October 11, 2016</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#Monday" title="Click to jump to the previous day">Previous</a>&nbsp;&nbsp;<a href="#Monday">Monday</a>&nbsp;&nbsp;<a href="#Tuesday">Tuesday</a>&nbsp;&nbsp;<a href="#Wednesday">Wednesday</a>&nbsp;&nbsp;<a href="#Thursday">Thursday</a>&nbsp;&nbsp;<a href="#Friday">Friday</a>&nbsp;&nbsp;<a href="#Wednesday" title="Click to jump to the next day">Next</a>&nbsp;&nbsp;<a href="#TheTop">Top</a>&nbsp;&nbsp;<br><span class="scrlis" style="color: gray">Click on the day's program and use the arrow keys for easy horizontal and vertical scrolling</span></p>
+      
+
+         <div id="div2" class="sdiv" style="overflow: auto">
+         <div id="ATuesday" tabindex="2">
+	  
+         <table class="dayB" style="width: 800px">
+
+<tr class="tHdr">
+<td width="7%" class="c">Interactive</td>
+<td width="7%" class="c">Interactive</td>
+<td width="7%" class="c">Track T1</td>
+<td width="7%" class="c">Track T2</td>
+<td width="7%" class="c">Track T3</td>
+<td width="7%" class="c">Track T4</td>
+<td width="7%" class="c">Track T5</td>
+<td width="7%" class="c">Track T6</td>
+<td width="7%" class="c">Track T7</td>
+<td width="7%" class="c">Track T8</td>
+<td width="7%" class="c">Track T9</td>
+<td width="7%" class="c">Track T10</td>
+<td width="7%" class="c">Track T12</td>
+<td width="7%" class="c">Track T11</td>
+</tr><tr>
+                  <td width="98%" rowspan="1" style="background-color: #99FF99"
+                     colspan="14" class="c">
+                        <a id="tupl">08:30-09:25</a><BR>
+                        Grand Ballroom<BR>
+                        Plenary session TuPL<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tupl" title="Click to go to the session program"><i>Plenary Talk 1. Manuela M. Veloso: Autonomous Intelligent Service Robots: Learning and Explanations in Human-Robot Interaction</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="98%" rowspan="1" style="background-color: #99FF99"
+                     colspan="14" class="c">
+                        <a id="tuor">09:30-10:00</a><BR>
+                        Grand Ballroom<BR>
+                        Opening Ceremony TuOR<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuor" title="Click to go to the session program"><i>Opening Ceremony</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="5" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tuh1">10:15-10:40</a><BR>
+                        #111<BR>
+                        Highlight Session TuH1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuh1" title="Click to go to the session program"><i>Highlight 1: Robot Vision/Learning in Robotics</i></a>
+                   </td>
+               
+                  <td width="49%" rowspan="5" style="background-color: #99FF99"
+                     colspan="7" class="c">
+                        <a id="tuh2">10:15-10:40</a><BR>
+                        #112<BR>
+                        Highlight Session TuH2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuh2" title="Click to go to the session program"><i>Highlight 2: Robot Applications</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="102" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuft11">10:15-18:00</a><BR>
+                        #301<BR>
+                        Forum TuFT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuft11" title="Click to go to the session program"><i>Futurist Forum</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tut11">10:45-11:10</a><BR>
+                        #111<BR>
+                        Teaser Session TuT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tut11" title="Click to go to the session program"><i>Sensing</i></a>
+                   </td>
+               
+                  <td width="49%" rowspan="25" style="background-color: #99FF99"
+                     colspan="7" class="c">
+                        <a id="tut12">10:45-11:10</a><BR>
+                        #112<BR>
+                        Teaser Session TuT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tut12" title="Click to go to the session program"><i>Mechanism Design and Control</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuai1">11:15-12:15</a><BR>
+                        #111<BR>
+                        Interactive Session TuAI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuai1" title="Click to go to the session program"><i>Interactive Session: Sensing</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuai2">11:15-12:15</a><BR>
+                        #112<BR>
+                        Interactive Session TuAI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuai2" title="Click to go to the session program"><i>Interactive Session: Mechanism Design and Control</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat1">11:15-12:15</a><BR>
+                        #101<BR>
+                        Regular session TuAT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat1" title="Click to go to the session program"><i>Robot Control Systems</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat2">11:15-12:15</a><BR>
+                        #102<BR>
+                        Regular session TuAT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat2" title="Click to go to the session program"><i>Tracking</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat3">11:15-12:15</a><BR>
+                        #103<BR>
+                        Regular session TuAT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat3" title="Click to go to the session program"><i>Recognition</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat4">11:15-12:15</a><BR>
+                        #104<BR>
+                        Regular session TuAT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat4" title="Click to go to the session program"><i>Medical Robot and Systems 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat5">11:15-12:15</a><BR>
+                        #105<BR>
+                        Regular session TuAT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat5" title="Click to go to the session program"><i>Actuator</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat6">11:15-12:15</a><BR>
+                        #106<BR>
+                        Regular session TuAT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat6" title="Click to go to the session program"><i>Underactuated Robots</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat7">11:15-12:15</a><BR>
+                        #107<BR>
+                        Regular session TuAT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat7" title="Click to go to the session program"><i>Perception for Grasping and Manipulation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat8">11:15-12:15</a><BR>
+                        #108<BR>
+                        Regular session TuAT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat8" title="Click to go to the session program"><i>Model Learning</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat9">11:15-12:15</a><BR>
+                        #204~205<BR>
+                        Regular session TuAT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat9" title="Click to go to the session program"><i>(Special Session) Autonomous Farming Technologies and Agricultural Robotics</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuat10">11:15-12:15</a><BR>
+                        #206~208<BR>
+                        Regular session TuAT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuat10" title="Click to go to the session program"><i>Humanoid Robots 1</i></a>
+                   </td>
+               
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="91%" rowspan="1" style="background-color: #99FF99"
+                     colspan="13" class="c">
+                        <a id="tulunch1">12:15-13:45</a><BR>
+                        Grand Ballroom<BR>
+                        Session TuLunch1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tulunch1" title="Click to go to the session program"><i>RSJ Lunch for Industry and Academia Collaboration</i></a>
+                   </td>
+               
+</tr>
+<tr>
+                  <td width="42%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tuk1">13:45-14:15</a><BR>
+                        #111<BR>
+                        Keynote session TuK1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuk1" title="Click to go to the session program"><i>Keynote Talk 1. Tetsunari Inamura: A Cloud Based VR Platform for Sharing Embodied Experience in HRI</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tuk2">13:45-14:15</a><BR>
+                        #112<BR>
+                        Keynote session TuK2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuk2" title="Click to go to the session program"><i>Keynote Talk 2. Jae-Bok Song: Smart Use of Springs for Robot Mechanisms</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="33" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuspt12">13:45-16:05</a><BR>
+                        Grand Ballroom<BR>
+                        Special Forum TuSpT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuspt12" title="Click to go to the session program"><i>Special Forum 1: AI/Deep Learning</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tut21">14:20-14:45</a><BR>
+                        #111<BR>
+                        Teaser Session TuT21<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tut21" title="Click to go to the session program"><i>Human-Robot Interaction</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tut22">14:20-14:45</a><BR>
+                        #112<BR>
+                        Teaser Session TuT22<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tut22" title="Click to go to the session program"><i>Manipulation and Grasping</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubi1">14:50-16:05</a><BR>
+                        #111<BR>
+                        Interactive Session TuBI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubi1" title="Click to go to the session program"><i>Interactive Session: Human-Robot Interaction</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubi2">14:50-16:05</a><BR>
+                        #112<BR>
+                        Interactive Session TuBI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubi2" title="Click to go to the session program"><i>Interactive Session: Manipulation and Grasping</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt1">14:50-16:05</a><BR>
+                        #101<BR>
+                        Regular session TuBT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt1" title="Click to go to the session program"><i>Wheeled System Control</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt2">14:50-16:05</a><BR>
+                        #102<BR>
+                        Regular session TuBT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt2" title="Click to go to the session program"><i>Detection and Segmentation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt3">14:50-16:05</a><BR>
+                        #103<BR>
+                        Regular session TuBT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt3" title="Click to go to the session program"><i>Haptics</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt4">14:50-16:05</a><BR>
+                        #104<BR>
+                        Regular session TuBT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt4" title="Click to go to the session program"><i>Medical Robot and Systems 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt5">14:50-16:05</a><BR>
+                        #105<BR>
+                        Regular session TuBT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt5" title="Click to go to the session program"><i>Navigation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt6">14:50-16:05</a><BR>
+                        #106<BR>
+                        Regular session TuBT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt6" title="Click to go to the session program"><i>Localization and Mapping</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt7">14:50-16:05</a><BR>
+                        #107<BR>
+                        Regular session TuBT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt7" title="Click to go to the session program"><i>Manufacturing and Automation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt8">14:50-16:05</a><BR>
+                        #108<BR>
+                        Regular session TuBT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt8" title="Click to go to the session program"><i>(Special Session) New Horizon for Robot Audition Applications</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt9">14:50-16:05</a><BR>
+                        #204~205<BR>
+                        Regular session TuBT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt9" title="Click to go to the session program"><i>Marine Robots 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tubt10">14:50-16:05</a><BR>
+                        #206~208<BR>
+                        Regular session TuBT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tubt10" title="Click to go to the session program"><i>Humanoid Robots 2</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tut31">16:25-16:50</a><BR>
+                        #111<BR>
+                        Teaser Session TuT31<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tut31" title="Click to go to the session program"><i>Human-Robot Interaction/Planning</i></a>
+                   </td>
+               
+                  <td width="49%" rowspan="25" style="background-color: #99FF99"
+                     colspan="7" class="c">
+                        <a id="tut32">16:25-16:50</a><BR>
+                        #112<BR>
+                        Teaser Session TuT32<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tut32" title="Click to go to the session program"><i>Unmanned Aerial Vehicle</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuci1">16:55-18:10</a><BR>
+                        #111<BR>
+                        Interactive Session TuCI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuci1" title="Click to go to the session program"><i>Interactive Session: Human-Robot Interaction/Planning</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuci2">16:55-18:10</a><BR>
+                        #112<BR>
+                        Interactive Session TuCI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuci2" title="Click to go to the session program"><i>Interactive Session: Unmanned Aerial Vehicle</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct1">16:55-18:10</a><BR>
+                        #101<BR>
+                        Regular session TuCT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct1" title="Click to go to the session program"><i>Motion Planning and Obstacle Avoidance</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct2">16:55-18:10</a><BR>
+                        #102<BR>
+                        Regular session TuCT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct2" title="Click to go to the session program"><i>Robot Vision</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct3">16:55-18:10</a><BR>
+                        #103<BR>
+                        Regular session TuCT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct3" title="Click to go to the session program"><i>Sensor-Based Planning</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct4">16:55-18:10</a><BR>
+                        #104<BR>
+                        Regular session TuCT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct4" title="Click to go to the session program"><i>Medical Robot and Systems 3</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct5">16:55-18:10</a><BR>
+                        #105<BR>
+                        Regular session TuCT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct5" title="Click to go to the session program"><i>Multiple Robot Path Planning</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct6">16:55-18:10</a><BR>
+                        #106<BR>
+                        Regular session TuCT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct6" title="Click to go to the session program"><i>Localization</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct7">16:55-18:10</a><BR>
+                        #107<BR>
+                        Regular session TuCT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct7" title="Click to go to the session program"><i>Grasping</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct8">16:55-18:10</a><BR>
+                        #108<BR>
+                        Regular session TuCT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct8" title="Click to go to the session program"><i>Robot Audition</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct9">16:55-18:10</a><BR>
+                        #204~205<BR>
+                        Regular session TuCT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct9" title="Click to go to the session program"><i>Marine Robots 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="6" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="tuct10">16:55-18:10</a><BR>
+                        #206~208<BR>
+                        Regular session TuCT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_2.html#tuct10" title="Click to go to the session program"><i>Legged Robots 1</i></a>
+                   </td>
+               
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+
+         </table>
+         </div>
+         </div>
+         </div>
+         <br><br>
+      
+         <div id="Wednesday" class="blck">
+         <p style="padding-left:100px;"><br><b>IROS 2016 Technical Program Wednesday October 12, 2016</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#Tuesday" title="Click to jump to the previous day">Previous</a>&nbsp;&nbsp;<a href="#Monday">Monday</a>&nbsp;&nbsp;<a href="#Tuesday">Tuesday</a>&nbsp;&nbsp;<a href="#Wednesday">Wednesday</a>&nbsp;&nbsp;<a href="#Thursday">Thursday</a>&nbsp;&nbsp;<a href="#Friday">Friday</a>&nbsp;&nbsp;<a href="#Thursday" title="Click to jump to the next day">Next</a>&nbsp;&nbsp;<a href="#TheTop">Top</a>&nbsp;&nbsp;<br><span class="scrlis" style="color: gray">Click on the day's program and use the arrow keys for easy horizontal and vertical scrolling</span></p>
+      
+
+         <div id="div3" class="sdiv" style="overflow: auto">
+         <div id="AWednesday" tabindex="3">
+	  
+         <table class="dayB" style="width: 800px">
+
+<tr class="tHdr">
+<td width="7%" class="c">Interactive</td>
+<td width="7%" class="c">Interactive</td>
+<td width="7%" class="c">Track T1</td>
+<td width="7%" class="c">Track T2</td>
+<td width="7%" class="c">Track T3</td>
+<td width="7%" class="c">Track T4</td>
+<td width="7%" class="c">Track T5</td>
+<td width="7%" class="c">Track T6</td>
+<td width="7%" class="c">Track T7</td>
+<td width="7%" class="c">Track T8</td>
+<td width="7%" class="c">Track T9</td>
+<td width="7%" class="c">Track T10</td>
+<td width="7%" class="c">Track T12</td>
+<td width="7%" class="c">Track T11</td>
+</tr><tr>
+                  <td width="98%" rowspan="1" style="background-color: #99FF99"
+                     colspan="14" class="c">
+                        <a id="wep1l">08:30-09:10</a><BR>
+                        Grand Ballroom<BR>
+                        Plenary session WeP1L<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wep1l" title="Click to go to the session program"><i>Plenary Talk 2. Tae Won Lim: Driving Together, Robot and Automobile</i></a>
+                   </td>
+               
+</tr>
+<tr>
+                  <td width="98%" rowspan="1" style="background-color: #99FF99"
+                     colspan="14" class="c">
+                        <a id="wep2r">09:10-09:50</a><BR>
+                        Grand Ballroom<BR>
+                        Plenary session WeP2R<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wep2r" title="Click to go to the session program"><i>Plenary Talk 3. Gill Pratt: A Billion Vehicles, Ten Trillion Miles - the Reliability Challenges of Autonomous Driving</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="5" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="weh1">10:00-10:25</a><BR>
+                        #111<BR>
+                        Highlight Session WeH1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weh1" title="Click to go to the session program"><i>Highlight 3: Motion and Path Planning</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="5" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="weh2">10:00-10:25</a><BR>
+                        #112<BR>
+                        Highlight Session WeH2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weh2" title="Click to go to the session program"><i>Highlight 4: Bio-Related and Medical Robotics</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="36" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wef1t12">10:00-12:00</a><BR>
+                        Grand Ballroom<BR>
+                        Session WeF1T12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wef1t12" title="Click to go to the session program"><i>RSJ Special Tutorial for Young Researchers</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="36" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wef1t11">10:00-12:00</a><BR>
+                        #301<BR>
+                        Forum WeF1T11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wef1t11" title="Click to go to the session program"><i>Industry Forum</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="wet11">10:30-10:55</a><BR>
+                        #111<BR>
+                        Teaser Session WeT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wet11" title="Click to go to the session program"><i>Advanced Automation/Sensor Fusion</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="wet12">10:30-10:55</a><BR>
+                        #112<BR>
+                        Teaser Session WeT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wet12" title="Click to go to the session program"><i>Bio-Related and Medical Robotics</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weai1">11:00-12:00</a><BR>
+                        #111<BR>
+                        Interactive Session WeAI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weai1" title="Click to go to the session program"><i>Interactive Session: Advanced Automation/Sensor Fusion</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weai2">11:00-12:00</a><BR>
+                        #112<BR>
+                        Interactive Session WeAI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weai2" title="Click to go to the session program"><i>Interactive Session: Bio-Related and Medical Robotics</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat1">11:00-12:00</a><BR>
+                        #101<BR>
+                        Regular session WeAT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat1" title="Click to go to the session program"><i>Robot Calibration and Modeling</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat2">11:00-12:00</a><BR>
+                        #102<BR>
+                        Regular session WeAT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat2" title="Click to go to the session program"><i>Omnidirectional Vision</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat3">11:00-12:00</a><BR>
+                        #103<BR>
+                        Regular session WeAT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat3" title="Click to go to the session program"><i>Manipulation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat4">11:00-12:00</a><BR>
+                        #104<BR>
+                        Regular session WeAT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat4" title="Click to go to the session program"><i>Cell Manipulation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat5">11:00-12:00</a><BR>
+                        #105<BR>
+                        Regular session WeAT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat5" title="Click to go to the session program"><i>Search and Rescue Robots</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat6">11:00-12:00</a><BR>
+                        #106<BR>
+                        Regular session WeAT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat6" title="Click to go to the session program"><i>Industrial Robot</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat7">11:00-12:00</a><BR>
+                        #107<BR>
+                        Regular session WeAT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat7" title="Click to go to the session program"><i>Robot Learning</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat8">11:00-12:00</a><BR>
+                        #108<BR>
+                        Regular session WeAT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat8" title="Click to go to the session program"><i>Physical Human-Robot Interaction</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat9">11:00-12:00</a><BR>
+                        #204~205<BR>
+                        Regular session WeAT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat9" title="Click to go to the session program"><i>Force Control 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weat10">11:00-12:00</a><BR>
+                        #206~208<BR>
+                        Regular session WeAT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weat10" title="Click to go to the session program"><i>Animation and Simulation</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+                  <td width="98%" rowspan="1" style="background-color: #99FF99"
+                     colspan="14" class="c">
+                        <a id="welunch1">12:00-13:30</a><BR>
+                        #203<BR>
+                        Session WeLunch1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#welunch1" title="Click to go to the session program"><i>SICE Luncheon Seminar</i></a>
+                   </td>
+               
+</tr>
+<tr>
+                  <td width="42%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="wek1">13:30-14:00</a><BR>
+                        #111<BR>
+                        Keynote session WeK1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wek1" title="Click to go to the session program"><i>Keynote Talk 3. I-Ming Chen: Human-Robot-Environment Interaction for Advanced Manufacturing Skill Learning and Automation</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="wek2">13:30-14:00</a><BR>
+                        #112<BR>
+                        Keynote session WeK2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wek2" title="Click to go to the session program"><i>Keynote Talk 4. Jungyun Choi: Robots That Could Change Our Lives– Challenges and Opportunities</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="33" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wespt12">13:30-15:50</a><BR>
+                        Grand Ballroom<BR>
+                        Special Forum WeSpT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wespt12" title="Click to go to the session program"><i>Special Forum 2: Autonomous Systems</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="42" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weft11">13:30-17:50</a><BR>
+                        #301<BR>
+                        Forum WeFT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weft11" title="Click to go to the session program"><i>Entrepreneurship Forum and Start-Up Competition</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="wet21">14:05-14:30</a><BR>
+                        #111<BR>
+                        Teaser Session WeT21<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wet21" title="Click to go to the session program"><i>AI-Based Robot Systems</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="wet22">14:05-14:30</a><BR>
+                        #112<BR>
+                        Teaser Session WeT22<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wet22" title="Click to go to the session program"><i>Robotic Applications</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webi1">14:35-15:50</a><BR>
+                        #111<BR>
+                        Interactive Session WeBI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webi1" title="Click to go to the session program"><i>Interactive Session: AI-Based Robot Systems</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webi2">14:35-15:50</a><BR>
+                        #112<BR>
+                        Interactive Session WeBI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webi2" title="Click to go to the session program"><i>Interactive Session: Robotic Applications</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt1">14:35-15:50</a><BR>
+                        #101<BR>
+                        Regular session WeBT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt1" title="Click to go to the session program"><i>Field Robots 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt2">14:35-15:50</a><BR>
+                        #102<BR>
+                        Regular session WeBT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt2" title="Click to go to the session program"><i>Sensor Fusion</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt3">14:35-15:50</a><BR>
+                        #103<BR>
+                        Regular session WeBT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt3" title="Click to go to the session program"><i>Trajectory Generation 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt4">14:35-15:50</a><BR>
+                        #104<BR>
+                        Regular session WeBT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt4" title="Click to go to the session program"><i>Rehabilitation Robotics</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt5">14:35-15:50</a><BR>
+                        #105<BR>
+                        Regular session WeBT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt5" title="Click to go to the session program"><i>Motion and Path Planning 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt6">14:35-15:50</a><BR>
+                        #106<BR>
+                        Regular session WeBT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt6" title="Click to go to the session program"><i>Mapping</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt7">14:35-15:50</a><BR>
+                        #107<BR>
+                        Regular session WeBT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt7" title="Click to go to the session program"><i>(Special Session) Robotics Software Engineering</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt8">14:35-15:50</a><BR>
+                        #108<BR>
+                        Regular session WeBT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt8" title="Click to go to the session program"><i>Robot Companions and Social Human-Robot Interaction</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt9">14:35-15:50</a><BR>
+                        #204~205<BR>
+                        Regular session WeBT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt9" title="Click to go to the session program"><i>Force Control 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="webt10">14:35-15:50</a><BR>
+                        #206~208<BR>
+                        Regular session WeBT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#webt10" title="Click to go to the session program"><i>Legged Robots 2</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weci1">16:05-17:20</a><BR>
+                        #111<BR>
+                        Poster session WeCI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weci1" title="Click to go to the session program"><i>Poster Session 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="weci2">16:05-17:20</a><BR>
+                        #112<BR>
+                        Poster session WeCI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#weci2" title="Click to go to the session program"><i>Poster Session 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect1">16:05-17:20</a><BR>
+                        #101<BR>
+                        Regular session WeCT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect1" title="Click to go to the session program"><i>Field Robots 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect2">16:05-17:20</a><BR>
+                        #102<BR>
+                        Regular session WeCT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect2" title="Click to go to the session program"><i>Visual Odometry and Navigation</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect3">16:05-17:20</a><BR>
+                        #103<BR>
+                        Regular session WeCT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect3" title="Click to go to the session program"><i>Trajectory Generation 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect4">16:05-17:20</a><BR>
+                        #104<BR>
+                        Regular session WeCT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect4" title="Click to go to the session program"><i>Surgical Robotics 1</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect5">16:05-17:20</a><BR>
+                        #105<BR>
+                        Regular session WeCT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect5" title="Click to go to the session program"><i>Motion and Path Planning 2</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect6">16:05-17:20</a><BR>
+                        #106<BR>
+                        Regular session WeCT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect6" title="Click to go to the session program"><i>Optimal Control and Optimization</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect7">16:05-17:20</a><BR>
+                        #107<BR>
+                        Regular session WeCT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect7" title="Click to go to the session program"><i>Learning from Demonstration</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect8">16:05-17:20</a><BR>
+                        #108<BR>
+                        Regular session WeCT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect8" title="Click to go to the session program"><i>Swarm Robotics</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect9">16:05-17:20</a><BR>
+                        #204~205<BR>
+                        Regular session WeCT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect9" title="Click to go to the session program"><i>Force Control 3</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="wect10">16:05-17:20</a><BR>
+                        #206~208<BR>
+                        Regular session WeCT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#wect10" title="Click to go to the session program"><i>Legged Robots 3</i></a>
+                   </td>
+               
+                  <td width="7%" rowspan="7" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="welt12">16:05-17:20</a><BR>
+                        Grand Ballroom<BR>
+                        Lifetime Session WeLT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_3.html#welt12" title="Click to go to the session program"><i>Lifetime Talk 1/2/3</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="7%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+
+         </table>
+         </div>
+         </div>
+         </div>
+         <br><br>
+      
+         <div id="Thursday" class="blck">
+         <p style="padding-left:100px;"><br><b>IROS 2016 Technical Program Thursday October 13, 2016</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#Wednesday" title="Click to jump to the previous day">Previous</a>&nbsp;&nbsp;<a href="#Monday">Monday</a>&nbsp;&nbsp;<a href="#Tuesday">Tuesday</a>&nbsp;&nbsp;<a href="#Wednesday">Wednesday</a>&nbsp;&nbsp;<a href="#Thursday">Thursday</a>&nbsp;&nbsp;<a href="#Friday">Friday</a>&nbsp;&nbsp;<a href="#Friday" title="Click to jump to the next day">Next</a>&nbsp;&nbsp;<a href="#TheTop">Top</a>&nbsp;&nbsp;<br><span class="scrlis" style="color: gray">Click on the day's program and use the arrow keys for easy horizontal and vertical scrolling</span></p>
+      
+
+         <div id="div4" class="sdiv" style="overflow: auto">
+         <div id="AThursday" tabindex="4">
+	  
+         <table class="dayB" style="width: 800px">
+
+<tr class="tHdr">
+<td width="6%" class="c">Interactive</td>
+<td width="6%" class="c">Interactive</td>
+<td width="6%" class="c">Track T1</td>
+<td width="6%" class="c">Track T2</td>
+<td width="6%" class="c">Track T3</td>
+<td width="6%" class="c">Track T4</td>
+<td width="6%" class="c">Track T5</td>
+<td width="6%" class="c">Track T6</td>
+<td width="6%" class="c">Track T7</td>
+<td width="6%" class="c">Track T8</td>
+<td width="6%" class="c">Track T9</td>
+<td width="6%" class="c">Track T10</td>
+<td width="6%" class="c">Track T12</td>
+<td width="6%" class="c">Track T11</td>
+<td width="6%" class="c">Track T13</td>
+</tr><tr>
+                  <td width="90%" rowspan="1" style="background-color: #99FF99"
+                     colspan="15" class="c">
+                        <a id="thpl">08:30-09:25</a><BR>
+                        Grand Ballroom<BR>
+                        Plenary session ThPL<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thpl" title="Click to go to the session program"><i>Plenary Talk 4. Guang-Zhong Yang: Perceptual Docking – Harmonising Human Robot Interaction</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="36%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="thk11">09:35-10:05</a><BR>
+                        #111<BR>
+                        Keynote session ThK11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thk11" title="Click to go to the session program"><i>Keynote Talk 5. Dominik Boesl: Future of Robotics - Shaping a Sustainable Future for the Next Generation ‘R’ of Robotic Natives</i></a>
+                   </td>
+               
+                  <td width="42%" rowspan="1" style="background-color: #99FF99"
+                     colspan="7" class="c">
+                        <a id="thk12">09:35-10:05</a><BR>
+                        #112<BR>
+                        Keynote session ThK12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thk12" title="Click to go to the session program"><i>Keynote Talk 6. in so Kweon: Robust Computer Vision Algorithms for Intelligent Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="67" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thf1t11">09:35-16:00</a><BR>
+                        #301<BR>
+                        Forum ThF1T11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thf1t11" title="Click to go to the session program"><i>Government Forum</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="100" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thf2t13">09:35-18:00</a><BR>
+                        #203<BR>
+                        Forum ThF2T13<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thf2t13" title="Click to go to the session program"><i>Autonomous Technologies and Their Societal Impact Forum</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="36%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tht11">10:20-10:45</a><BR>
+                        #111<BR>
+                        Teaser Session ThT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#tht11" title="Click to go to the session program"><i>Learning in Robotics</i></a>
+                   </td>
+               
+                  <td width="36%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tht12">10:20-10:45</a><BR>
+                        #112<BR>
+                        Teaser Session ThT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#tht12" title="Click to go to the session program"><i>Robot Vision</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="25" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thk3t12">10:20-10:45</a><BR>
+                        Grand Ballroom<BR>
+                        Keynote session ThK3T12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thk3t12" title="Click to go to the session program"><i>Keynote Talk 7. Seth Hutchinson: Robust Distributed Control Policies for Multi-Robot Systems</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thai1">10:55-11:55</a><BR>
+                        #111<BR>
+                        Interactive Session ThAI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thai1" title="Click to go to the session program"><i>Interactive Session: Learning in Robotics</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thai2">10:55-11:55</a><BR>
+                        #112<BR>
+                        Interactive Session ThAI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thai2" title="Click to go to the session program"><i>Interactive Session: Robot Vision</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that1">10:55-11:55</a><BR>
+                        #101<BR>
+                        Regular session ThAT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that1" title="Click to go to the session program"><i>Motion Planning for Manipulators</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that2">10:55-11:55</a><BR>
+                        #102<BR>
+                        Regular session ThAT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that2" title="Click to go to the session program"><i>Visual Servoing 1</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that3">10:55-11:55</a><BR>
+                        #103<BR>
+                        Regular session ThAT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that3" title="Click to go to the session program"><i>Novel Range Sensing</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that4">10:55-11:55</a><BR>
+                        #104<BR>
+                        Regular session ThAT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that4" title="Click to go to the session program"><i>Surgical Robotics 2</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that5">10:55-11:55</a><BR>
+                        #105<BR>
+                        Regular session ThAT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that5" title="Click to go to the session program"><i>Mechanisms and Parallel Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that6">10:55-11:55</a><BR>
+                        #106<BR>
+                        Regular session ThAT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that6" title="Click to go to the session program"><i>Space Robotics and Automation</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that7">10:55-11:55</a><BR>
+                        #107<BR>
+                        Regular session ThAT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that7" title="Click to go to the session program"><i>Human-Robot Interaction 1</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that8">10:55-11:55</a><BR>
+                        #108<BR>
+                        Regular session ThAT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that8" title="Click to go to the session program"><i>Multi-Robot Systems 1</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that9">10:55-11:55</a><BR>
+                        #204~205<BR>
+                        Regular session ThAT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that9" title="Click to go to the session program"><i>Robotic Manipulation</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="4" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="that10">10:55-11:55</a><BR>
+                        #206~208<BR>
+                        Regular session ThAT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#that10" title="Click to go to the session program"><i>Software and Framework</i></a>
+                   </td>
+               
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="78%" rowspan="1" style="background-color: #99FF99"
+                     colspan="13" class="c">
+                        <a id="thlunch1">11:55-13:30</a><BR>
+                        Korea Trade Exhibition Center<BR>
+                        Awards ceremony ThLunch1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thlunch1" title="Click to go to the session program"><i>Award Ceremony</i></a>
+                   </td>
+               
+</tr>
+<tr>
+                  <td width="36%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="thk21">13:30-14:00</a><BR>
+                        #111<BR>
+                        Keynote session ThK21<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thk21" title="Click to go to the session program"><i>Keynote Talk 8. Wolfram Burgard: Techniques for Probabilistic Robot Navigation and Perception and Beyond</i></a>
+                   </td>
+               
+                  <td width="36%" rowspan="1" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="thk22">13:30-14:00</a><BR>
+                        #112<BR>
+                        Keynote session ThK22<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thk22" title="Click to go to the session program"><i>Keynote Talk 9. Nikos G. Tsagarakis: Compliant Actuation Technologies for Emerging High Performance Humanoids</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="33" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thspt12">13:30-15:50</a><BR>
+                        Grand Ballroom<BR>
+                        Special Forum ThSpT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thspt12" title="Click to go to the session program"><i>Special Forum 3: Medical Robotics</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="36%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tht21">14:05-14:30</a><BR>
+                        #111<BR>
+                        Teaser Session ThT21<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#tht21" title="Click to go to the session program"><i>Navigation/SLAM</i></a>
+                   </td>
+               
+                  <td width="36%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tht22">14:05-14:30</a><BR>
+                        #112<BR>
+                        Teaser Session ThT22<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#tht22" title="Click to go to the session program"><i>Motion and Path Planning</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbi1">14:35-15:50</a><BR>
+                        #111<BR>
+                        Interactive Session ThBI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbi1" title="Click to go to the session program"><i>Interactive Session: Navigation/SLAM</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbi2">14:35-15:50</a><BR>
+                        #112<BR>
+                        Interactive Session ThBI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbi2" title="Click to go to the session program"><i>Interactive Session: Motion and Path Planning</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt1">14:35-15:50</a><BR>
+                        #101<BR>
+                        Regular session ThBT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt1" title="Click to go to the session program"><i>(Special Session) towards the Realization of the Aerial Robotic Workers</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt2">14:35-15:50</a><BR>
+                        #102<BR>
+                        Regular session ThBT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt2" title="Click to go to the session program"><i>Visual Learning</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt3">14:35-15:50</a><BR>
+                        #103<BR>
+                        Regular session ThBT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt3" title="Click to go to the session program"><i>Tactile Sensing</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt4">14:35-15:50</a><BR>
+                        #104<BR>
+                        Regular session ThBT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt4" title="Click to go to the session program"><i>Biologically-Inspired Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt5">14:35-15:50</a><BR>
+                        #105<BR>
+                        Regular session ThBT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt5" title="Click to go to the session program"><i>UAV-Vision</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt6">14:35-15:50</a><BR>
+                        #106<BR>
+                        Regular session ThBT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt6" title="Click to go to the session program"><i>Planning and Scheduling</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt7">14:35-15:50</a><BR>
+                        #107<BR>
+                        Regular session ThBT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt7" title="Click to go to the session program"><i>Human-Robot Interaction 2</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt8">14:35-15:50</a><BR>
+                        #108<BR>
+                        Regular session ThBT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt8" title="Click to go to the session program"><i>Multi-Robot Systems 2</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt9">14:35-15:50</a><BR>
+                        #204~205<BR>
+                        Regular session ThBT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt9" title="Click to go to the session program"><i>Micro/Nano Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thbt10">14:35-15:50</a><BR>
+                        #206~208<BR>
+                        Regular session ThBT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thbt10" title="Click to go to the session program"><i>Bipedal Control</i></a>
+                   </td>
+               
+</tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr></tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="36%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tht31">16:10-16:35</a><BR>
+                        #111<BR>
+                        Teaser Session ThT31<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#tht31" title="Click to go to the session program"><i>Micro Robot/Robot Intelligence</i></a>
+                   </td>
+               
+                  <td width="36%" rowspan="25" style="background-color: #99FF99"
+                     colspan="6" class="c">
+                        <a id="tht32">16:10-16:35</a><BR>
+                        #112<BR>
+                        Teaser Session ThT32<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#tht32" title="Click to go to the session program"><i>Robot Control and Planning</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="25" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thwt12">16:10-16:35</a><BR>
+                        Grand Ballroom<BR>
+                        Session ThWT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thwt12" title="Click to go to the session program"><i>Competition Winner Talk</i></a>
+                   </td>
+               
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thci1">16:40-17:55</a><BR>
+                        #111<BR>
+                        Interactive Session ThCI1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thci1" title="Click to go to the session program"><i>Interactive Session: Micro Robot/Robot Intelligence</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thci2">16:40-17:55</a><BR>
+                        #112<BR>
+                        Interactive Session ThCI2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thci2" title="Click to go to the session program"><i>Interactive Session: Robot Control and Planning</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct1">16:40-17:55</a><BR>
+                        #101<BR>
+                        Regular session ThCT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct1" title="Click to go to the session program"><i>Soft Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct2">16:40-17:55</a><BR>
+                        #102<BR>
+                        Regular session ThCT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct2" title="Click to go to the session program"><i>Visual Servoing 2</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct3">16:40-17:55</a><BR>
+                        #103<BR>
+                        Regular session ThCT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct3" title="Click to go to the session program"><i>Force and Tactile Sensing</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct4">16:40-17:55</a><BR>
+                        #104<BR>
+                        Regular session ThCT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct4" title="Click to go to the session program"><i>Mobile Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct5">16:40-17:55</a><BR>
+                        #105<BR>
+                        Regular session ThCT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct5" title="Click to go to the session program"><i>UAV-Control</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct6">16:40-17:55</a><BR>
+                        #106<BR>
+                        Regular session ThCT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct6" title="Click to go to the session program"><i>Wearable Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct7">16:40-17:55</a><BR>
+                        #107<BR>
+                        Regular session ThCT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct7" title="Click to go to the session program"><i>Robot Control and Planning</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct8">16:40-17:55</a><BR>
+                        #108<BR>
+                        Regular session ThCT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct8" title="Click to go to the session program"><i>Multi-Robot Systems 3</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct9">16:40-17:55</a><BR>
+                        #204~205<BR>
+                        Regular session ThCT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct9" title="Click to go to the session program"><i>Climbing Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="5" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="thct10">16:40-17:55</a><BR>
+                        #206~208<BR>
+                        Regular session ThCT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_4.html#thct10" title="Click to go to the session program"><i>Humanoid Locomotion</i></a>
+                   </td>
+               
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+
+         </table>
+         </div>
+         </div>
+         </div>
+         <br><br>
+      
+         <div id="Friday" class="blck">
+         <p style="padding-left:100px;"><br><b>IROS 2016 Technical Program Friday October 14, 2016</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#Thursday" title="Click to jump to the previous day">Previous</a>&nbsp;&nbsp;<a href="#Monday">Monday</a>&nbsp;&nbsp;<a href="#Tuesday">Tuesday</a>&nbsp;&nbsp;<a href="#Wednesday">Wednesday</a>&nbsp;&nbsp;<a href="#Thursday">Thursday</a>&nbsp;&nbsp;<a href="#Friday">Friday</a>&nbsp;&nbsp;<a href="#TheTop">Top</a>&nbsp;&nbsp;<br><span class="scrlis" style="color: gray">Click on the day's program and use the arrow keys for easy horizontal and vertical scrolling</span></p>
+      
+
+         <div id="div5" class="sdiv" style="overflow: auto">
+         <div id="AFriday" tabindex="5">
+	  
+         <table class="dayB" style="width: 800px">
+
+<tr class="tHdr">
+<td width="6%" class="c">Track T1</td>
+<td width="6%" class="c">Track T2</td>
+<td width="6%" class="c">Track T3</td>
+<td width="6%" class="c">Track T4</td>
+<td width="6%" class="c">Track T5</td>
+<td width="6%" class="c">Track T6</td>
+<td width="6%" class="c">Track T7</td>
+<td width="6%" class="c">Track T8</td>
+<td width="6%" class="c">Track T9</td>
+<td width="6%" class="c">Track T10</td>
+<td width="6%" class="c">Track T11</td>
+<td width="6%" class="c">Track T12</td>
+<td width="6%" class="c">Track T13</td>
+<td width="6%" class="c">Track T14</td>
+<td width="6%" class="c">Track T15</td>
+</tr><tr>
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft1">08:30-18:00</a><BR>
+                        Grand Ballroom<BR>
+                        Workshop FrFT1<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft1" title="Click to go to the session program"><i>Personal Robot Interaction</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft2">08:30-18:00</a><BR>
+                        #111<BR>
+                        Workshop FrFT2<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft2" title="Click to go to the session program"><i>Vision-Based High Speed Autonomous Navigation of UAVs</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft3">08:30-18:00</a><BR>
+                        #112<BR>
+                        Workshop FrFT3<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft3" title="Click to go to the session program"><i>The Mechatronics behind Force/Torque Controlled Robot Actuation: Secrets & Challenges</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft4">08:30-18:00</a><BR>
+                        #101<BR>
+                        Workshop FrFT4<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft4" title="Click to go to the session program"><i>Closed-Loop Grasping and Manipulation: Challenges and Progress</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft5">08:30-18:00</a><BR>
+                        #102<BR>
+                        Workshop FrFT5<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft5" title="Click to go to the session program"><i>State Estimation and Terrain Perception for All Terrain Mobile Robots</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft6">08:30-18:00</a><BR>
+                        #103<BR>
+                        Workshop FrFT6<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft6" title="Click to go to the session program"><i>Assistance and Service Robotics in a Human Environment</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft7">08:30-18:00</a><BR>
+                        #104<BR>
+                        Workshop FrFT7<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft7" title="Click to go to the session program"><i>Joint Workshop on Wearable Robotics and Assistive Devices</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft8">08:30-18:00</a><BR>
+                        #105<BR>
+                        Workshop FrFT8<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft8" title="Click to go to the session program"><i>Frontiers of Endoluminal Robotic Surgery</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft9">08:30-18:00</a><BR>
+                        #106<BR>
+                        Workshop FrFT9<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft9" title="Click to go to the session program"><i>Workshop on Machine Learning Methods for High-Level Cognitive Capabilities in Robotics</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft10">08:30-18:00</a><BR>
+                        #107<BR>
+                        Workshop FrFT10<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft10" title="Click to go to the session program"><i>Towards a Unified Workflow for Multi­contact Motion on Legged Robots: Challenges in Planning, Optimization and Control</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft11">08:30-18:00</a><BR>
+                        #108<BR>
+                        Workshop FrFT11<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft11" title="Click to go to the session program"><i>Tenth International Cognitive Robotics Workshop</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="3" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frft12">08:30-18:00</a><BR>
+                        #204~205<BR>
+                        Workshop FrFT12<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frft12" title="Click to go to the session program"><i>Folding in Robotics</i></a>
+                   </td>
+               
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frh1t13">08:30-12:30</a><BR>
+                        #206~208<BR>
+                        Workshop FrH1T13<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frh1t13" title="Click to go to the session program"><i>Developing Advanced Robotics Applications with MATLAB and Simulink</i></a>
+                   </td>
+               
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frh1t15">08:30-12:30</a><BR>
+                        #203<BR>
+                        Workshop FrH1T15<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frh1t15" title="Click to go to the session program"><i>Human Movement Understanding and Robotics</i></a>
+                   </td>
+               
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+<tr>
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+                  <td width="6%" rowspan="1" style="background-color: #FFFFFF"
+                     colspan="1" class="c">
+                        <a id="frh2t14">14:00-18:00</a><BR>
+                        #301<BR>
+                        Workshop FrH2T14<BR>
+                        <BR>
+                        <a href="IROS16_ContentListMedia_5.html#frh2t14" title="Click to go to the session program"><i>Intelligent Instruments and Software for Future Medical Workspaces</i></a>
+                   </td>
+               
+<td width="6%" style="border: white; background-color: #ffffff">&nbsp;</td>
+</tr>
+
+         </table>
+         </div>
+         </div>
+         </div>
+         <br><br>
+      
+</div>
+
+
+</div>
+
+</body>
+
+</html>
